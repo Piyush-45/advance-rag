@@ -1,20 +1,13 @@
 // lib/vectorStore.ts
-import { MemoryVectorStore } from "langchain/vectorstores/memory";
-import { GoogleGenerativeAIEmbeddings } from "@langchain/google-genai";
+import { PineconeStore } from "@langchain/pinecone";
+import { pineconeIndex } from "./pinecone";
+import { geminiEmbeddings } from "./embeddings";
 
-/**
- * Singleton in-memory vector store (clears on server restart).
- * Uses Gemini text-embedding-004 (768-dim).
- */
-const g = globalThis as unknown as { __store?: MemoryVectorStore };
-
-export async function getVectorStore(): Promise<MemoryVectorStore> {
-  if (!g.__store) {
-    const embeddings = new GoogleGenerativeAIEmbeddings({
-      model: "text-embedding-004",
-      apiKey: process.env.GOOGLE_API_KEY!, // explicit to avoid silent misses
-    });
-    g.__store = new MemoryVectorStore(embeddings);
-  }
-  return g.__store!;
+export async function getVectorStore(namespace?: string) {
+  const index = pineconeIndex();
+  return PineconeStore.fromExistingIndex(geminiEmbeddings, {
+    pineconeIndex: index,
+    namespace,            // e.g., `user:${userId}` for multi-tenant
+    maxConcurrency: 5,    // per docs
+  });
 }

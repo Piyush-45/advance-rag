@@ -1,45 +1,25 @@
-// lib/ingest.ts
+// lib/ingest.ts  (parse → chunk → addDocuments)
 import { writeFile, unlink } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { PDFLoader } from "@langchain/community/document_loaders/fs/pdf";
 import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
-import { getVectorStore } from "@/lib/vectorStore";
+import { getVectorStore } from "./vectorStore";
 
-export type UploadResult = { pages: number; chunks: number };
-
-/**
- * In-memory ingestion:
- * - save temp → parse PDF → chunk → add to MemoryVectorStore
- */
-export async function handleUploadAndIndex(file: File): Promise<UploadResult> {
+export async function handleUploadAndIndex(file: File, namespace?: string) {
   const bytes = Buffer.from(await file.arrayBuffer());
-  const tempPath = join(tmpdir(), `upload-${Date.now()}.pdf`);
-  await writeFile(tempPath, bytes);
-
+  const temp = join(tmpdir(), `upload-${Date.now()}.pdf`);
+  await writeFile(temp, bytes);
   try {
-    // Parse pages
-    const loader = new PDFLoader(tempPath);
-    const rawDocs = await loader.load();
+    const loader = new PDFLoader(temp);
+    const pages = await loader.load();
+    const splitter = new RecursiveCharacterTextSplitter({ chunkSize: 800, chunkOverlap: 120 });
+    let docs = await splitter.splitDocuments(pages);
+    docs = docs.filter(d => (d.pageContent || "").trim().length >= 20);
 
-    // Chunk ~200–300 tokens (rough) with overlap
-    const splitter = new RecursiveCharacterTextSplitter({
-      chunkSize: 800,
-      chunkOverlap: 120,
-    });
-
-    let docs = await splitter.splitDocuments(rawDocs);
-
-    // Drop empty/tiny chunks (helps avoid useless embeddings)
-    docs = docs.filter((d) => (d.pageContent || "").trim().length >= 20);
-    if (docs.length === 0) return { pages: rawDocs.length, chunks: 0 };
-
-    // Index into in-memory vector store
-    const store = await getVectorStore();
+    const store = await getVectorStore(namespace);
+    // LangChain handles embedding via geminiEmbeddings + batching
     await store.addDocuments(docs);
-
-    return { pages: rawDocs.length, chunks: docs.length };
-  } finally {
-    await unlink(tempPath).catch(() => {});
-  }
+    return { pages: pages.length, chunks: docs.length };
+  } finally { await unlink(temp).catch(() => {}); }
 }
