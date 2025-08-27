@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 
 export default async function Admin() {
   const session = await auth();
+
   if (!session) redirect("/api/auth/signin");
 
   // fake stats (later load from DB)
@@ -20,7 +21,7 @@ export default async function Admin() {
     <main className="mx-auto max-w-6xl px-4 py-10 space-y-8">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Dashboard</h1>
-        <Badge variant="secondary">Beta</Badge>
+        <Badge variant="secondary">{session?.user?.email}</Badge>
       </div>
 
       {/* KPI cards */}

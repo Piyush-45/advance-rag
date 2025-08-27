@@ -6,7 +6,8 @@ import { PDFLoader } from "@langchain/community/document_loaders/fs/pdf";
 import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 import { getVectorStore } from "./vectorStore";
 
-export async function handleUploadAndIndex(file: File, namespace?: string) {
+export async function handleUploadAndIndex(file: File, namespace: string) {
+  if (!namespace) throw new Error("Namespace required");
   const bytes = Buffer.from(await file.arrayBuffer());
   const temp = join(tmpdir(), `upload-${Date.now()}.pdf`);
   await writeFile(temp, bytes);

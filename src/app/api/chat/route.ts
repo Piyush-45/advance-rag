@@ -1,17 +1,33 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // app/api/chat/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { getVectorStore } from "@/lib/vectorStore";
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { SystemMessage, HumanMessage } from "@langchain/core/messages";
 
+import { namespaceForTenant } from "@/lib/tenant";
+import { auth } from "@/lib/auth";
+
 export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
-  const { question, topK = 6, namespace } = await req.json();
+  const session = await auth();
+  if (!session?.user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
+  const { question, topK = 6 } = await req.json();
   if (!question || typeof question !== "string") {
     return NextResponse.json({ error: "Bad request" }, { status: 400 });
   }
+
+  // derive tenant + namespace on the SERVER
+  const tenantId = (session.user as any).id ?? session.user.email;
+  if (!tenantId) {
+    return NextResponse.json({ error: "Missing tenant id" }, { status: 500 });
+  }
+  const namespace = namespaceForTenant(tenantId);
+  console.log("CHAT ns:", namespace, "email:", session.user.email);
 
   const store = await getVectorStore(namespace);
   const docs = await store.asRetriever(topK).invoke(question);
@@ -35,50 +51,12 @@ export async function POST(req: NextRequest) {
   const llm = new ChatGoogleGenerativeAI({
     model: "gemini-1.5-flash",
     apiKey: process.env.GOOGLE_API_KEY!,
-    temperature: 0.3, // a bit more factual/concise
+    temperature: 0.3,
   });
 
   const res = await llm.invoke([
-    new SystemMessage(`
-You are "VenueBot", a friendly and knowledgeable assistant that speaks like a helpful wedding coordinator.
-Answer questions using ONLY the provided CONTEXT. If you don’t find the answer in context, say so politely.
-
-When asked about pricing or estimates:
-- If the CONTEXT includes numbers, give a clear rough estimate using those numbers.
-- If no numbers are in CONTEXT, explain that exact pricing isn’t available and offer next steps (e.g., consultation).
-- Never invent numbers not present in the provided text.
-
-Formatting:
-- When the answer includes multiple items (features, facilities, steps, options),
-  output them as a Markdown bullet list (each item starts with "- ").
-- Use short phrases per bullet; avoid long sentences.
-
-Tone:
-- Warm, approachable, human — like you're talking to an excited couple planning their wedding.
-- Keep answers concise but engaging.
-- Use natural phrases: "Of course!", "Here’s what’s included", "I’d be happy to explain…"
-
-Style:
-- Prefer short paragraphs or simple lists (not dense walls of text).
-- If appropriate, highlight key details with **bold** labels (e.g., **Capacity**, **Pricing**).
-- If the answer includes multiple features, facilities, or options, format them as a neat bullet or numbered list.
-- Keep sentences short and clear.
-- For greetings or casual chit-chat ("hi", "how are you"), respond naturally without forcing context.
-
-`),
-    new HumanMessage(`
-CONTEXT:
-${context}
-
-QUESTION:
-${question}
-
-Guidelines:
-- Answer conversationally, like a human assistant.
-- Don’t over-explain; summarize and keep it engaging.
-- If details repeat, merge them smoothly.
-- End with a friendly offer, like: "Would you like me to share more about catering or pricing?"
-`),
+    new SystemMessage(`You are "VenueBot". Use ONLY the provided CONTEXT. Be warm, concise, and prefer Markdown bullet lists when helpful.`),
+    new HumanMessage(`CONTEXT:\n${context}\n\nQUESTION:\n${question}`),
   ]);
 
   return NextResponse.json({
