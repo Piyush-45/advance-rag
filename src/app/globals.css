@@ -1,3 +1,43 @@
+/* globals.css */
 @import "tailwindcss";
-/* @import "tw-animate-css"; */
 
+/* Tailwind v4 tokens. These generate utilities like bg-card, text-muted-foreground, border-border, etc. */
+@theme {
+  /* base */
+  --color-background: #ffffff;
+  --color-foreground: #0f172a;        /* slate-900 */
+
+  /* cards */
+  --color-card: #ffffff;
+  --color-card-foreground: #0f172a;
+
+  /* borders & inputs */
+  --color-border: #e5e7eb;            /* gray-200 */
+  --color-input: #e5e7eb;
+
+  /* muted */
+  --color-muted: #f3f4f6;             /* gray-100 */
+  --color-muted-foreground: #6b7280;  /* gray-500 */
+
+  /* focus ring */
+  --color-ring: #111827;
+
+  /* optional radius token for custom CSS (not a utility) */
+  --radius: 0.5rem;
+}
+
+/* sensible base styles */
+@layer base {
+  html, body {
+    height: 100%;
+    background: var(--color-background);
+    color: var(--color-foreground);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* force all generic `border` utilities to use the light gray token instead of black */
+  :where(.border) {
+    border-color: var(--color-border);
+  }
+}

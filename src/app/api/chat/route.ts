@@ -7,6 +7,7 @@ import { SystemMessage, HumanMessage } from "@langchain/core/messages";
 import { verifyTenantToken } from "@/lib/tenantToken";
 import { auth } from "@/lib/auth";
 import { namespaceForTenant } from "@/lib/tenant";
+import { supabaseAdmin } from "@/lib/supabase";
 
 export const runtime = "nodejs";
 
@@ -22,6 +23,14 @@ export async function POST(req: NextRequest) {
     try {
       const { tid } = verifyTenantToken(token);
       tenantId = tid;
+      try {
+        await supabaseAdmin.from("queries").insert({
+          tenant_email: tenantId,
+          question,
+        });
+      } catch {
+        // best-effort; don't block chat on analytics
+      }
     } catch {
       return NextResponse.json({ error: "Invalid or expired link" }, { status: 401 });
     }
@@ -33,6 +42,7 @@ export async function POST(req: NextRequest) {
   }
 
   if (!tenantId) return NextResponse.json({ error: "Missing tenant id" }, { status: 500 });
+
 
   const namespace = namespaceForTenant(tenantId);
   // console.log("CHAT ns:", namespace, "tenant:", tenantId);
