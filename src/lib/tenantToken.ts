@@ -1,17 +1,15 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-// src/lib/tenantToken.ts
+// lib/tenantToken.ts
 import jwt from "jsonwebtoken";
 
-const SECRET = process.env.NEXTAUTH_SECRET!;
-if (!SECRET) throw new Error("NEXTAUTH_SECRET is required for signing tokens");
+const SECRET = process.env.JWT_SECRET!;
+if (!SECRET) throw new Error("Missing JWT_SECRET");
 
-export function signTenantToken(tenantId: string, venueName?: string, ttlMinutes = 60 * 24 * 7) {
-  const payload = { tid: tenantId, name: venueName ?? undefined };
-  return jwt.sign(payload, SECRET, { expiresIn: `${ttlMinutes}m` });
+export type TenantTokenPayload = { tid: string; iat?: number; exp?: number };
+
+export function signTenantToken(email: string) {
+  return jwt.sign({ tid: email }, SECRET, { expiresIn: "7d" });
 }
 
-export function verifyTenantToken(token: string): { tid: string; name?: string } {
-  const decoded = jwt.verify(token, SECRET) as any;
-  if (!decoded?.tid) throw new Error("Invalid tenant token payload");
-  return { tid: decoded.tid as string, name: decoded.name as string | undefined };
+export function verifyTenantToken(token: string): TenantTokenPayload {
+  return jwt.verify(token, SECRET) as TenantTokenPayload;
 }

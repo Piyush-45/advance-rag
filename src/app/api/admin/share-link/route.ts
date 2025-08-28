@@ -1,21 +1,25 @@
-// src/app/api/admin/share-link/route.ts
-/* eslint-disable @typescript-eslint/no-explicit-any */
+// app/api/admin/share-link/route.ts
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth"; // your getServerSession() helper is fine
-import { signTenantToken } from "@/lib/tenantToken";
-
-export const runtime = "nodejs";
+import { auth } from "@/lib/auth";
+import jwt from "jsonwebtoken";
 
 export async function GET() {
   const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session?.user?.email) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
-  const tenantId = (session.user.email as any)?? session.user.email;
-  if (!tenantId) return NextResponse.json({ error: "Missing tenant id" }, { status: 500 });
+  const tenantEmail = session.user.email;
 
-  const token = signTenantToken(tenantId);
-  const base = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-  const url = `${base}/chat?token=${encodeURIComponent(token)}`;
+  // Create signed token (valid for 7 days)
+  const token = jwt.sign(
+    { tid: tenantEmail }, // payload
+    process.env.JWT_SECRET!, // make sure JWT_SECRET is set in .env.local
+    { expiresIn: "7d" }
+  );
+
+  // Absolute URL to /chat?token=...
+  const url = `${process.env.NEXT_PUBLIC_APP_URL}/chat?token=${token}`;
 
   return NextResponse.json({ url });
 }
