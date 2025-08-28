@@ -1,34 +1,43 @@
+// src/app/api/chat/route.ts
 /* eslint-disable @typescript-eslint/no-explicit-any */
-// app/api/chat/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { getVectorStore } from "@/lib/vectorStore";
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { SystemMessage, HumanMessage } from "@langchain/core/messages";
-
-import { namespaceForTenant } from "@/lib/tenant";
+import { verifyTenantToken } from "@/lib/tenantToken";
 import { auth } from "@/lib/auth";
+import { namespaceForTenant } from "@/lib/tenant";
 
 export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const { question, topK = 6 } = await req.json();
+  const { question, topK = 6, token } = await req.json();
   if (!question || typeof question !== "string") {
     return NextResponse.json({ error: "Bad request" }, { status: 400 });
   }
 
-  // derive tenant + namespace on the SERVER
-  const tenantId = (session.user as any).id ?? session.user.email;
-  if (!tenantId) {
-    return NextResponse.json({ error: "Missing tenant id" }, { status: 500 });
+  // 1) Resolve tenant
+  let tenantId: string | undefined;
+  if (token) {
+    try {
+      const { tid } = verifyTenantToken(token);
+      tenantId = tid;
+    } catch {
+      return NextResponse.json({ error: "Invalid or expired link" }, { status: 401 });
+    }
+  } else {
+    // Admin preview (logged-in owner)
+    const session = await auth();
+    if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    tenantId = (session.user as any).id ?? session.user.email ?? undefined;
   }
-  const namespace = namespaceForTenant(tenantId);
-  console.log("CHAT ns:", namespace, "email:", session.user.email);
 
+  if (!tenantId) return NextResponse.json({ error: "Missing tenant id" }, { status: 500 });
+
+  const namespace = namespaceForTenant(tenantId);
+  // console.log("CHAT ns:", namespace, "tenant:", tenantId);
+
+  // 2) Retrieve only from tenant namespace
   const store = await getVectorStore(namespace);
   const docs = await store.asRetriever(topK).invoke(question);
 
@@ -39,12 +48,11 @@ export async function POST(req: NextRequest) {
     });
   }
 
+  // 3) Build context + call LLM
   const context = docs
     .map(
       (d, i) =>
-        `[[${i + 1}]]${
-          d.metadata?.loc?.pageNumber ? ` (page ${d.metadata.loc.pageNumber})` : ""
-        } ${d.pageContent}`
+        `[[${i + 1}]]${d.metadata?.loc?.pageNumber ? ` (page ${d.metadata.loc.pageNumber})` : ""} ${d.pageContent}`
     )
     .join("\n\n");
 

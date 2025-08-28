@@ -1,58 +1,47 @@
-import { auth } from "@/lib/auth";
-import { redirect } from "next/navigation";
-import { Card, CardContent } from "@/components/ui/card";
-import { UploadPanel } from "@/components/admin/upload-panel";
-// import { DocsTable } from "@/components/admin/docs-table";
-import { Badge } from "@/components/ui/badge";
+// app/admin/page.tsx (or wherever your upload form lives)
+"use client";
 
-export default async function Admin() {
-  const session = await auth();
+import { useEffect, useState } from "react";
 
-  if (!session) redirect("/api/auth/signin");
+export default function AdminPage() {
+  const [status, setStatus] = useState("idle");
 
-  // fake stats (later load from DB)
-  const stats = [
-    { label: "PDFs Uploaded", value: 3 },
-    { label: "Chunks Indexed", value: 742 },
-    { label: "Queries Answered", value: 128 },
-  ];
+  async function handleUpload(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    await fetch("/api/upload", { method: "POST", body: formData });
+    setStatus("processing");
+  }
+
+  // Poll status
+  useEffect(() => {
+    if (status === "processing") {
+      const interval = setInterval(async () => {
+        const res = await fetch("/api/admin/status");
+        const { status } = await res.json();
+        setStatus(status);
+      }, 3000);
+      return () => clearInterval(interval);
+    }
+  }, [status]);
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-10 space-y-8">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Dashboard</h1>
-        <Badge variant="secondary">{session?.user?.email}</Badge>
-      </div>
+    <main className="max-w-xl mx-auto py-10">
+      <h1 className="text-2xl font-bold mb-6">Admin Dashboard</h1>
 
-      {/* KPI cards */}
-      <div className="grid gap-4 md:grid-cols-3">
-        {stats.map((s) => (
-          <Card key={s.label}>
-            <CardContent className="p-6">
-              <p className="text-sm text-muted-foreground">{s.label}</p>
-              <p className="text-2xl font-bold">{s.value}</p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      <form onSubmit={handleUpload} className="space-y-4">
+        <input type="file" name="file" accept="application/pdf" required />
+        <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded">
+          Upload PDF
+        </button>
+      </form>
 
-      <div className="grid md:grid-cols-3 gap-4">
-        <Card className="md:col-span-2">
-          <CardContent className="p-6">
-            <h2 className="font-medium mb-4">Your Documents</h2>
-            {/* <DocsTable /> */}
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-6">
-            <h2 className="font-medium mb-4">Upload PDF</h2>
-            <UploadPanel />
-          </CardContent>
-        </Card>
+      <div className="mt-4 text-sm">
+        {status === "idle" && <p>No upload yet.</p>}
+        {status === "processing" && <p className="text-yellow-600">⏳ Processing your brochure…</p>}
+        {status === "ready" && <p className="text-green-600">✅ Ready! Your VenueBot is updated.</p>}
+        {status === "error" && <p className="text-red-600">⚠️ Something went wrong. Try again.</p>}
       </div>
     </main>
   );
 }
-
-
-// Wedding@venue12
