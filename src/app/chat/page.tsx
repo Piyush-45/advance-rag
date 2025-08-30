@@ -171,7 +171,7 @@ function Markdown({ content }: { content: string }) {
     td: (props) => <td className="border-b p-2 align-top" {...props} />,
 
     // ✅ Properly typed code renderer; `inline` is now recognized
-    code({ inline, className, children, ...props }) {
+    code({ inline, className, children, ...props }:any) {
       if (inline) {
         return (
           <code
