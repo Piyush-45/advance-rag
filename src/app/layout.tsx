@@ -9,14 +9,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const session = await auth();
   return (
     <html lang="en" suppressHydrationWarning>
-<body className="min-h-screen bg-background text-foreground">
-        <SiteHeader signedIn={!!session} />
+<body className="min-h-screen bg-background text-foreground ">
+        {/* <SiteHeader signedIn={!!session} /> */}
         {children}
-        <footer className="border-t mt-10">
+        {/* <footer className="border-t mt-10">
           <div className="mx-auto max-w-6xl px-4 py-8 text-sm text-muted-foreground">
             © {new Date().getFullYear()} VenueBot
           </div>
-        </footer>
+        </footer> */}
       </body>
     </html>
   );

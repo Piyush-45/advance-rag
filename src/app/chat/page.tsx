@@ -312,13 +312,18 @@ export default function ChatPage() {
       </header>
 
       {/* Body */}
-      <div className="relative isolate ">
+      <div className="relative isolate flex-1 overflow-x-hidden">
         {/* Soft gradient background */}
         <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(40%_30%_at_50%_-10%,hsl(var(--primary)/0.12),transparent),radial-gradient(40%_30%_at_110%_10%,hsl(var(--primary)/0.08),transparent)]" />
 
-        <div className="mx-auto grid max-w-3xl flex-1 grid-rows-[1fr_auto_auto] gap-0">
-          <Card className="row-start-1 row-end-2 m-4 mb-2 overflow-hidden border">
-            <div ref={scrollRef} className="h-full overflow-y-auto p-4 md:p-6 space-y-4">
+        {/* 👇 this grid now actually fills remaining height */}
+        <div className="mx-auto grid h-full max-w-3xl grid-rows-[1fr_auto_auto]">
+          {/* Chat history */}
+          <Card className="row-start-1 row-end-2 m-4 mb-2 h-full overflow-hidden border">
+            <div
+              ref={scrollRef}
+              className="h-full overflow-y-auto p-4 md:p-6 space-y-4"
+            >
               {messages.map((m, i) => (
                 <ChatMessage key={i} role={m.role} content={m.content} />
               ))}
@@ -328,14 +333,14 @@ export default function ChatPage() {
           </Card>
 
           {/* Quick replies */}
-          <div className="mx-4">
+          <div className="mx-4 overflow-x-auto mt-10">
             <QuickReplies onPick={sendMessage} disabled={loading} />
           </div>
 
           {/* Composer */}
           <form
             onSubmit={handleSubmit}
-            className="m-4 mt-2 flex items-center gap-2 rounded-xl border bg-background p-2"
+            className="m-4 mt-4 flex items-center gap-2 rounded-xl border bg-background p-2"
           >
             <Input
               value={input}
@@ -346,7 +351,7 @@ export default function ChatPage() {
               className="flex-1 border-0 bg-transparent focus-visible:ring-0"
               aria-label="Message"
             />
-            <Button type="submit" disabled={disabled} className="gap-2">
+            <Button type="submit" disabled={loading || !input.trim()} className="gap-2">
               {loading ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -369,9 +374,7 @@ export default function ChatPage() {
             type="button"
             size="sm"
             variant="secondary"
-            onClick={() => {
-              bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-            }}
+            onClick={() => bottomRef.current?.scrollIntoView({ behavior: "smooth" })}
             className="fixed bottom-24 right-6 shadow-md"
           >
             <ChevronDown className="mr-1.5 h-4 w-4" />

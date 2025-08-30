@@ -354,6 +354,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { LogoutButton } from "@/components/admin/LogoutButton";
+import { SiteHeader } from "@/components/site-header";
+import { auth } from "@/lib/auth";
 
 /* ----------------------- Types (same shape as your APIs) ----------------------- */
 type UploadInfo = {
@@ -405,6 +407,7 @@ function Sparkline({ points, height = 40 }: { points: number[]; height?: number 
 
 /* -------------------------------- Main Page -------------------------------- */
 export default function AdminPage() {
+
   // status
   const [info, setInfo] = useState<UploadInfo>({ status: "idle" });
   const isProcessing = info.status === "processing";
@@ -515,6 +518,7 @@ export default function AdminPage() {
   /* --------------------------------- UI ---------------------------------- */
   return (
     <main className="mx-auto max-w-6xl px-6 py-10  space-y-10">
+
       {/* Welcome / header */}
       <section className="space-y-2.5 mt-4">
         <h1 className="text-2xl font-semibold tracking-tight">
@@ -695,8 +699,8 @@ function RangePills({
 }) {
   const base =
     "px-2.5 py-1 rounded-full text-xs border transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/10";
-  const active = "bg-black text-black  border-black";
-  const idle = "bg-white text-foreground border-gray-300 hover:bg-gray-50";
+  const active = "bg-black text-white  border-black";
+  const idle = "bg-white text-back  border-gray-300 hover:bg-gray-50";
   return (
     <div className="flex gap-2">
       <button className={`${base} ${value === "7d" ? active : idle}`} onClick={() => onChange("7d")}>
