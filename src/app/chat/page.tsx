@@ -1,6 +1,5 @@
-// app/chat/page.tsx
+
 "use client";
-// at top of the file with other imports
 import type { Components } from "react-markdown";
 
 import { useEffect, useRef, useState, useCallback } from "react";

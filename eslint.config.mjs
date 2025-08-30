@@ -20,9 +20,9 @@ const eslintConfig = [
       "next-env.d.ts",
     ],
       files: ["src/app/api/**/*.{ts,tsx}"],
-      rules: {
-        "@typescript-eslint/no-explicit-any": "off",
-      },
+        rules: {
+          "@typescript-eslint/no-explicit-any": "off",
+        },
   },
 
 ];
