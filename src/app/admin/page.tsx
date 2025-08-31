@@ -364,7 +364,7 @@ type UploadInfo = {
   fileName?: string;
   pages?: number;
   chunks?: number;
-  shareLink: undefined,
+
   // updatedAt?: string;
   user?: { name?: string; email?: string; image?: string };
 };
