@@ -15,10 +15,11 @@ export async function GET() {
   const token = jwt.sign(
     { tid: tenantEmail }, // payload
     process.env.JWT_SECRET!, // make sure JWT_SECRET is set in .env.local
-    { expiresIn: "7d" }
+    { expiresIn: "1y" }
   );
 
   // Absolute URL to /chat?token=...
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
   const url = `${process.env.NEXT_PUBLIC_APP_URL}/chat?token=${token}`;
 
   return NextResponse.json({ url });

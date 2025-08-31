@@ -364,7 +364,8 @@ type UploadInfo = {
   fileName?: string;
   pages?: number;
   chunks?: number;
-  updatedAt?: string;
+  shareLink: undefined,
+  // updatedAt?: string;
   user?: { name?: string; email?: string; image?: string };
 };
 type TopQuery = { question: string; count: number };
@@ -509,11 +510,11 @@ export default function AdminPage() {
     fetchAnalytics(range);
   }, [range]);
 
-  const lastUpdated = useMemo(() => {
-    if (!info.updatedAt) return "—";
-    const d = new Date(info.updatedAt);
-    return d.toLocaleString();
-  }, [info.updatedAt]);
+  // const lastUpdated = useMemo(() => {
+  //   if (!info.updatedAt) return "—";
+  //   const d = new Date(info.updatedAt);
+  //   return d.toLocaleString();
+  // }, [info.updatedAt]);
 
   /* --------------------------------- UI ---------------------------------- */
   return (
@@ -563,10 +564,6 @@ export default function AdminPage() {
                 <Field label="File" value={info.fileName || "—"} />
                 <Field label="Pages" value={info.pages ?? "—"} />
                 <Field label="Chunks" value={info.chunks ?? "—"} />
-              </div>
-
-              <div className="mt-4 text-xs text-muted-foreground">
-                Last updated: <span className="text-foreground">{lastUpdated}</span>
               </div>
             </CardContent>
           </Card>
@@ -727,11 +724,24 @@ function StatusBadge({
     ready: "bg-green-100 text-green-900 border border-green-300",
     error: "bg-red-100 text-red-900 border border-red-300",
   };
-  const text =
-    status === "idle" ? "Idle" : status === "processing" ? "Processing…" : status === "ready" ? "Ready" : "Error";
-  return <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${styles[status]}`}>{text}</span>;
-}
 
+  const text =
+    status === "idle"
+      ? "Idle"
+      : status === "processing"
+      ? "Processing…"
+      : status === "ready"
+      ? "Ready"
+      : "Error";
+
+  return (
+    <span
+      className={`inline-flex items-center justify-center rounded-full px-2.5 py-1 text-xs font-medium ${styles[status]}`}
+    >
+      {text}
+    </span>
+  );
+}
 function labelFor(r: "7d" | "30d" | "all") {
   if (r === "7d") return "7d";
   if (r === "30d") return "30d";
