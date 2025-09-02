@@ -295,7 +295,7 @@ export default function ChatPage() {
   return (
     <main className="h-[calc(100vh-3.5rem)] flex flex-col">
       {/* Header */}
-      <header className=" top-0 z-10 border-b bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      {/* <header className=" top-0 z-10 border-b bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="mx-auto flex h-14 max-w-3xl items-center justify-between px-4">
           <div className="inline-flex items-center gap-2 text-sm font-semibold">
             <div className="grid h-7 w-7 place-items-center rounded-full border">
@@ -308,7 +308,7 @@ export default function ChatPage() {
             Ask about capacity, pricing, facilities, packages, availability
           </div>
         </div>
-      </header>
+      </header> */}
 
       {/* Body */}
       <div className="relative isolate flex-1 overflow-x-hidden">

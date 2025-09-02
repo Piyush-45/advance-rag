@@ -2,6 +2,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import jwt from "jsonwebtoken";
+import { supabaseAdmin } from "@/lib/supabase";
 
 export async function GET() {
   const session = await auth();
@@ -11,16 +12,39 @@ export async function GET() {
 
   const tenantEmail = session.user.email;
 
-  // Create signed token (valid for 7 days)
+  // 1) Try to fetch existing share_link
+  const { data: tenant, error } = await supabaseAdmin
+    .from("tenants")
+    .select("share_link")
+    .eq("email", tenantEmail)
+    .single();
+
+  if (error) {
+    return NextResponse.json({ error: "DB fetch error" }, { status: 500 });
+  }
+
+  if (tenant?.share_link) {
+    return NextResponse.json({ url: tenant.share_link });
+  }
+
+  // 2) Generate new link (first-time only)
   const token = jwt.sign(
-    { tid: tenantEmail }, // payload
-    process.env.JWT_SECRET!, // make sure JWT_SECRET is set in .env.local
-    { expiresIn: "1y" }
+    { tid: tenantEmail },
+    process.env.JWT_SECRET!,
+    { expiresIn: "30d" } // token expiry — adjust as needed
   );
 
-  // Absolute URL to /chat?token=...
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
   const url = `${process.env.NEXT_PUBLIC_APP_URL}/chat?token=${token}`;
+
+  // 3) Save in DB
+  const { error: updateErr } = await supabaseAdmin
+    .from("tenants")
+    .update({ share_link: url })
+    .eq("email", tenantEmail);
+
+  if (updateErr) {
+    return NextResponse.json({ error: "Failed to save share link" }, { status: 500 });
+  }
 
   return NextResponse.json({ url });
 }
